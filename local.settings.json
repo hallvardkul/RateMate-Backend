@@ -1,7 +1,17 @@
 {
   "IsEncrypted": false,
   "Values": {
+    "AzureWebJobsStorage": "UseDevelopmentStorage=true",
     "FUNCTIONS_WORKER_RUNTIME": "node",
-    "AzureWebJobsStorage": "UseDevelopmentStorage=true"
+    "POSTGRES_HOST": "your-postgres-server.postgres.database.azure.com",
+    "POSTGRES_DB": "RateMate_dev_db",
+    "POSTGRES_USER": "ratemate_appuser",
+    "POSTGRES_PASSWORD": "your-secure-password",
+    "COSMOS_CONNECTION_STRING": "your-cosmos-connection-string",
+    "BLOB_STORAGE_CONNECTION_STRING": "your-blob-storage-connection-string",
+    "JWT_SECRET": "your-jwt-secret-key",
+    "BLOB_CONTAINER_NAME": "media",
+    "COSMOS_DB_NAME": "RateMateMediaDB",
+    "COSMOS_COLLECTION_NAME": "media"
   }
 }
