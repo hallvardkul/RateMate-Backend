@@ -1,0 +1,17 @@
+{
+  "IsEncrypted": false,
+  "Values": {
+    "AzureWebJobsStorage": "UseDevelopmentStorage=true",
+    "FUNCTIONS_WORKER_RUNTIME": "node",
+    "POSTGRES_HOST": "<your-postgres-host>",
+    "POSTGRES_DB": "<your-postgres-database>",
+    "POSTGRES_USER": "<your-postgres-user>",
+    "POSTGRES_PASSWORD": "<your-postgres-password>",
+    "COSMOS_CONNECTION_STRING": "<your-cosmos-connection-string>",
+    "BLOB_STORAGE_CONNECTION_STRING": "<your-blob-storage-connection-string>",
+    "JWT_SECRET": "<your-jwt-secret>",
+    "BLOB_CONTAINER_NAME": "<your-blob-container-name>",
+    "COSMOS_DB_NAME": "<your-cosmos-db-name>",
+    "COSMOS_COLLECTION_NAME": "<your-cosmos-collection-name>"
+  }
+} 
