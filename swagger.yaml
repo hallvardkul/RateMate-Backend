@@ -1,23 +1,35 @@
-openapi: 3.0.0
+openapi: 3.0.3
 info:
   title: RateMate API
-  description: API for the RateMate product rating and review platform
+  description: |
+    RateMate API - A comprehensive API for product reviews and ratings.
+    
+    This API allows users to:
+    * Register and authenticate
+    * Browse products by categories and subcategories
+    * Create, read, update, and delete reviews
+    * Comment on reviews
+    * Rate products across multiple categories
   version: 1.0.0
   contact:
-    email: your-email@example.com
+    name: RateMate Support Team
+    email: support@ratemate.com
+
 servers:
   - url: http://localhost:7073/api
     description: Local development server
-  - url: https://your-production-url.azurewebsites.net/api
-    description: Production server
+  - url: https://api.ratemate.com/api
+    description: Production server (not yet available)
 
 tags:
   - name: Auth
-    description: Authentication endpoints
+    description: Authentication operations
   - name: User
-    description: User profile operations
+    description: User management operations
   - name: Categories
     description: Product category operations
+  - name: Subcategories
+    description: Product subcategory operations
   - name: Products
     description: Product operations
   - name: Reviews
@@ -28,6 +40,7 @@ tags:
 paths:
   /auth/register:
     post:
+      operationId: registerUser
       tags:
         - Auth
       summary: Register a new user
@@ -79,6 +92,7 @@ paths:
   
   /auth/login:
     post:
+      operationId: loginUser
       tags:
         - Auth
       summary: User login
@@ -129,6 +143,7 @@ paths:
 
   /categories:
     get:
+      operationId: getCategories
       tags:
         - Categories
       summary: Get all product categories
@@ -156,6 +171,7 @@ paths:
                 $ref: '#/components/schemas/Error'
     
     post:
+      operationId: createCategory
       tags:
         - Categories
       summary: Create a new category
@@ -208,6 +224,7 @@ paths:
 
   /categories/{categoryId}:
     get:
+      operationId: getCategoryById
       tags:
         - Categories
       summary: Get category by ID
@@ -240,6 +257,7 @@ paths:
                 $ref: '#/components/schemas/Error'
     
     put:
+      operationId: updateCategory
       tags:
         - Categories
       summary: Update a category
@@ -304,6 +322,7 @@ paths:
                 $ref: '#/components/schemas/Error'
     
     delete:
+      operationId: deleteCategory
       tags:
         - Categories
       summary: Delete a category
@@ -349,7 +368,1302 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
-# This is just a partial specification - you would add more paths for other endpoints
+  /subcategories:
+    get:
+      operationId: getSubcategories
+      tags:
+        - Subcategories
+      summary: Get all product subcategories
+      description: Retrieve all product subcategories or only active ones
+      parameters:
+        - in: query
+          name: activeOnly
+          schema:
+            type: boolean
+          description: If true, returns only active subcategories
+      responses:
+        '200':
+          description: A list of product subcategories
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ProductSubcategoryWithParent'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    
+    post:
+      operationId: createSubcategory
+      tags:
+        - Subcategories
+      summary: Create a new subcategory
+      description: Create a new product subcategory (admin only)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateProductSubcategoryRequest'
+      responses:
+        '201':
+          description: Subcategory created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductSubcategory'
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden - admin access required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Parent category not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Subcategory already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /subcategories/{subcategoryId}:
+    get:
+      operationId: getSubcategoryById
+      tags:
+        - Subcategories
+      summary: Get subcategory by ID
+      description: Retrieve a specific product subcategory by its ID
+      parameters:
+        - name: subcategoryId
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: ID of the subcategory to retrieve
+      responses:
+        '200':
+          description: Subcategory found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductSubcategoryWithParent'
+        '404':
+          description: Subcategory not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    
+    put:
+      operationId: updateSubcategory
+      tags:
+        - Subcategories
+      summary: Update a subcategory
+      description: Update an existing product subcategory (admin only)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: subcategoryId
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: ID of the subcategory to update
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateProductSubcategoryRequest'
+      responses:
+        '200':
+          description: Subcategory updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductSubcategory'
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden - admin access required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Subcategory or parent category not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Subcategory name already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    
+    delete:
+      operationId: deleteSubcategory
+      tags:
+        - Subcategories
+      summary: Delete a subcategory
+      description: Delete a product subcategory (admin only)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: subcategoryId
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: ID of the subcategory to delete
+      responses:
+        '200':
+          description: Subcategory deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductSubcategory'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden - admin access required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Subcategory not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /categories/{categoryId}/subcategories:
+    get:
+      operationId: getSubcategoriesByCategory
+      tags:
+        - Subcategories
+      summary: Get subcategories by category
+      description: Retrieve all subcategories belonging to a specific category
+      parameters:
+        - name: categoryId
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: ID of the parent category
+        - name: activeOnly
+          in: query
+          schema:
+            type: boolean
+          description: If true, returns only active subcategories
+      responses:
+        '200':
+          description: List of subcategories
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ProductSubcategory'
+        '404':
+          description: Category not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /user/profile:
+    get:
+      operationId: getUserProfile
+      tags:
+        - User
+      summary: Get user profile
+      description: Retrieve the profile of the authenticated user
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: User profile retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  profile:
+                    $ref: '#/components/schemas/UserBasic'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    
+    put:
+      operationId: updateUserProfile
+      tags:
+        - User
+      summary: Update user profile
+      description: Update the profile of the authenticated user
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                  example: newusername
+                email:
+                  type: string
+                  format: email
+                  example: newemail@example.com
+      responses:
+        '200':
+          description: User profile updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  profile:
+                    $ref: '#/components/schemas/UserBasic'
+        '400':
+          description: Invalid input or no update fields provided
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Email is already in use
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /reviews:
+    get:
+      operationId: getReviews
+      tags:
+        - Reviews
+      summary: Get reviews
+      description: Get reviews by product ID or all reviews
+      parameters:
+        - in: query
+          name: productId
+          schema:
+            type: integer
+          description: ID of the product to get reviews for
+      responses:
+        '200':
+          description: List of reviews
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ReviewResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    
+    post:
+      operationId: createReview
+      tags:
+        - Reviews
+      summary: Create a review
+      description: Create a new review for a product
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateReviewRequest'
+      responses:
+        '201':
+          description: Review created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReviewResponse'
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Product not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /reviews/{reviewId}:
+    get:
+      operationId: getReviewById
+      tags:
+        - Reviews
+      summary: Get a review by ID
+      description: Get a specific review by its ID
+      parameters:
+        - name: reviewId
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: ID of the review
+      responses:
+        '200':
+          description: Review found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReviewResponse'
+        '404':
+          description: Review not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    
+    put:
+      operationId: updateReview
+      tags:
+        - Reviews
+      summary: Update a review
+      description: Update an existing review
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: reviewId
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: ID of the review to update
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateReviewRequest'
+      responses:
+        '200':
+          description: Review updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReviewResponse'
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden - not the review owner
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Review not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    
+    delete:
+      operationId: deleteReview
+      tags:
+        - Reviews
+      summary: Delete a review
+      description: Delete an existing review
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: reviewId
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: ID of the review to delete
+      responses:
+        '200':
+          description: Review deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Review with ID 1 successfully deleted"
+                  review:
+                    $ref: '#/components/schemas/Review'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden - not the review owner
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Review not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /reviews/categories:
+    get:
+      operationId: getRatingCategories
+      tags:
+        - Reviews
+      summary: Get rating categories
+      description: Get all available rating categories
+      responses:
+        '200':
+          description: List of rating categories
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RatingCategory'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /comments:
+    get:
+      operationId: getComments
+      tags:
+        - Comments
+      summary: Get comments
+      description: Get comments by review ID or parent comment ID
+      parameters:
+        - in: query
+          name: reviewId
+          schema:
+            type: integer
+          description: ID of the review to get comments for
+        - in: query
+          name: parentId
+          schema:
+            type: integer
+          description: ID of the parent comment to get replies for
+      responses:
+        '200':
+          description: List of comments
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CommentResponse'
+        '400':
+          description: Missing required parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    
+    post:
+      operationId: createComment
+      tags:
+        - Comments
+      summary: Create a comment
+      description: Create a new comment on a review or reply to another comment
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCommentRequest'
+      responses:
+        '201':
+          description: Comment created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Comment'
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Review or parent comment not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /comments/{commentId}:
+    get:
+      operationId: getCommentById
+      tags:
+        - Comments
+      summary: Get a comment by ID
+      description: Get a specific comment by its ID
+      parameters:
+        - name: commentId
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: ID of the comment
+      responses:
+        '200':
+          description: Comment found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Comment'
+        '404':
+          description: Comment not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    
+    put:
+      operationId: updateComment
+      tags:
+        - Comments
+      summary: Update a comment
+      description: Update an existing comment
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: commentId
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: ID of the comment to update
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateCommentRequest'
+      responses:
+        '200':
+          description: Comment updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Comment'
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden - not the comment owner
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Comment not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    
+    delete:
+      operationId: deleteComment
+      tags:
+        - Comments
+      summary: Delete a comment
+      description: Delete an existing comment
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: commentId
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: ID of the comment to delete
+      responses:
+        '200':
+          description: Comment deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Comment with ID 1 successfully deleted"
+                  comment:
+                    $ref: '#/components/schemas/Comment'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden - not the comment owner
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Comment not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /products:
+    get:
+      operationId: getProducts
+      tags:
+        - Products
+      summary: Get products
+      description: Get products with optional filtering
+      parameters:
+        - in: query
+          name: categoryId
+          schema:
+            type: integer
+          description: ID of the category to filter products by
+        - in: query
+          name: subcategoryId
+          schema:
+            type: integer
+          description: ID of the subcategory to filter products by
+        - in: query
+          name: search
+          schema:
+            type: string
+          description: Search term to filter products by name
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 20
+          description: Number of products to return
+        - in: query
+          name: offset
+          schema:
+            type: integer
+            default: 0
+          description: Offset for pagination
+      responses:
+        '200':
+          description: List of products
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  products:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ProductWithDetails'
+                  total:
+                    type: integer
+                    example: 100
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    
+    post:
+      operationId: createProduct
+      tags:
+        - Products
+      summary: Create a product
+      description: Create a new product (admin only)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateProductRequest'
+      responses:
+        '201':
+          description: Product created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden - not an admin
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /products/{productId}:
+    get:
+      operationId: getProductById
+      tags:
+        - Products
+      summary: Get a product by ID
+      description: Get a specific product by its ID
+      parameters:
+        - name: productId
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: ID of the product
+      responses:
+        '200':
+          description: Product found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductWithDetails'
+        '404':
+          description: Product not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    
+    put:
+      operationId: updateProduct
+      tags:
+        - Products
+      summary: Update a product
+      description: Update an existing product (admin only)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: productId
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: ID of the product to update
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateProductRequest'
+      responses:
+        '200':
+          description: Product updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden - not an admin
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Product not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    
+    delete:
+      operationId: deleteProduct
+      tags:
+        - Products
+      summary: Delete a product
+      description: Delete an existing product (admin only)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: productId
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: ID of the product to delete
+      responses:
+        '200':
+          description: Product deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Product with ID 1 successfully deleted"
+                  product:
+                    $ref: '#/components/schemas/Product'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden - not an admin
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Product not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /users:
+    get:
+      operationId: getUsers
+      tags:
+        - User
+      summary: Get all users
+      description: Get a list of all users (admin only)
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: List of users
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/User'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden - not an admin
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+                
+  /users/{userId}:
+    get:
+      operationId: getUserById
+      tags:
+        - User
+      summary: Get a user by ID
+      description: Get a specific user by their ID (admin only or own profile)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: ID of the user
+      responses:
+        '200':
+          description: User found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden - not an admin or not own profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    
+    put:
+      operationId: updateUser
+      tags:
+        - User
+      summary: Update a user
+      description: Update a user's information (admin only or own profile)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: ID of the user to update
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateUserRequest'
+      responses:
+        '200':
+          description: User updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden - not an admin or not own profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    
+    delete:
+      operationId: deleteUser
+      tags:
+        - User
+      summary: Delete a user
+      description: Delete a user (admin only or own profile)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: ID of the user to delete
+      responses:
+        '200':
+          description: User deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "User with ID 1 successfully deleted"
+                  user:
+                    $ref: '#/components/schemas/User'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden - not an admin or not own profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 
 components:
   securitySchemes:
@@ -357,17 +1671,24 @@ components:
       type: http
       scheme: bearer
       bearerFormat: JWT
+      description: JWT token obtained after authentication
   
   schemas:
     Error:
       type: object
+      required:
+        - code
+        - message
       properties:
-        error:
+        code:
+          type: integer
+          example: 400
+        message:
           type: string
-          example: "An error occurred"
+          example: "Invalid input"
         details:
           type: string
-          example: "Detailed error message"
+          example: "Validation error on field 'name': Cannot be empty"
     
     UserBasic:
       type: object
@@ -432,4 +1753,354 @@ components:
           example: Electronic devices and accessories
         is_active:
           type: boolean
-          example: true 
+          example: true
+          
+    ProductSubcategory:
+      type: object
+      properties:
+        subcategory_id:
+          type: integer
+          example: 1
+        parent_category_id:
+          type: integer
+          example: 1
+        subcategory_name:
+          type: string
+          example: Smartphones
+        description:
+          type: string
+          example: Mobile phones and accessories
+        is_active:
+          type: boolean
+          example: true
+        created_at:
+          type: string
+          format: date-time
+          example: "2023-05-01T10:30:00Z"
+    
+    ProductSubcategoryWithParent:
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/ProductSubcategory'
+        - type: object
+          properties:
+            parent_category_name:
+              type: string
+              example: Electronics
+    
+    CreateProductSubcategoryRequest:
+      type: object
+      required:
+        - parent_category_id
+        - subcategory_name
+      properties:
+        parent_category_id:
+          type: integer
+          example: 1
+        subcategory_name:
+          type: string
+          example: Smartphones
+        description:
+          type: string
+          example: Mobile phones and accessories
+        is_active:
+          type: boolean
+          example: true
+    
+    UpdateProductSubcategoryRequest:
+      type: object
+      properties:
+        parent_category_id:
+          type: integer
+          example: 1
+        subcategory_name:
+          type: string
+          example: Smartphones
+        description:
+          type: string
+          example: Mobile phones and accessories
+        is_active:
+          type: boolean
+          example: true
+
+    ReviewResponse:
+      type: object
+      properties:
+        review_id:
+          type: integer
+          example: 1
+        product_id:
+          type: integer
+          example: 1
+        user_id:
+          type: integer
+          example: 1
+        rating:
+          type: integer
+          example: 5
+        comment:
+          type: string
+          example: "Great product! Highly recommended."
+        created_at:
+          type: string
+          format: date-time
+          example: "2023-05-01T10:30:00Z"
+
+    CreateReviewRequest:
+      type: object
+      required:
+        - product_id
+        - user_id
+        - rating
+        - comment
+      properties:
+        product_id:
+          type: integer
+          example: 1
+        user_id:
+          type: integer
+          example: 1
+        rating:
+          type: integer
+          example: 5
+        comment:
+          type: string
+          example: "Great product! Highly recommended."
+
+    Review:
+      type: object
+      properties:
+        review_id:
+          type: integer
+          example: 1
+        product_id:
+          type: integer
+          example: 1
+        user_id:
+          type: integer
+          example: 1
+        rating:
+          type: integer
+          example: 5
+        comment:
+          type: string
+          example: "Great product! Highly recommended."
+        created_at:
+          type: string
+          format: date-time
+          example: "2023-05-01T10:30:00Z"
+
+    RatingCategory:
+      type: object
+      properties:
+        category_id:
+          type: integer
+          example: 1
+        category_name:
+          type: string
+          example: Design
+
+    CommentResponse:
+      type: object
+      properties:
+        comment_id:
+          type: integer
+          example: 1
+        review_id:
+          type: integer
+          example: 1
+        user_id:
+          type: integer
+          example: 1
+        comment:
+          type: string
+          example: "Great product! Highly recommended."
+        created_at:
+          type: string
+          format: date-time
+          example: "2023-05-01T10:30:00Z"
+
+    CreateCommentRequest:
+      type: object
+      required:
+        - review_id
+        - user_id
+        - comment
+      properties:
+        review_id:
+          type: integer
+          example: 1
+        user_id:
+          type: integer
+          example: 1
+        comment:
+          type: string
+          example: "Great product! Highly recommended."
+
+    Comment:
+      type: object
+      properties:
+        comment_id:
+          type: integer
+          example: 1
+        review_id:
+          type: integer
+          example: 1
+        user_id:
+          type: integer
+          example: 1
+        comment:
+          type: string
+          example: "Great product! Highly recommended."
+        created_at:
+          type: string
+          format: date-time
+          example: "2023-05-01T10:30:00Z"
+
+    UpdateCommentRequest:
+      type: object
+      properties:
+        comment:
+          type: string
+          example: "Great product! Highly recommended."
+
+    ProductWithDetails:
+      type: object
+      properties:
+        product_id:
+          type: integer
+          example: 1
+        category_id:
+          type: integer
+          example: 1
+        subcategory_id:
+          type: integer
+          example: 1
+        name:
+          type: string
+          example: "Smartphone"
+        description:
+          type: string
+          example: "A high-end smartphone with advanced features"
+        price:
+          type: number
+          example: 799.99
+        stock:
+          type: integer
+          example: 100
+        created_at:
+          type: string
+          format: date-time
+          example: "2023-05-01T10:30:00Z"
+
+    CreateProductRequest:
+      type: object
+      required:
+        - category_id
+        - subcategory_id
+        - name
+        - description
+        - price
+        - stock
+      properties:
+        category_id:
+          type: integer
+          example: 1
+        subcategory_id:
+          type: integer
+          example: 1
+        name:
+          type: string
+          example: "Smartphone"
+        description:
+          type: string
+          example: "A high-end smartphone with advanced features"
+        price:
+          type: number
+          example: 799.99
+        stock:
+          type: integer
+          example: 100
+
+    UpdateProductRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          example: "Updated Smartphone"
+        description:
+          type: string
+          example: "An updated version of the smartphone with improved features"
+        price:
+          type: number
+          example: 899.99
+        stock:
+          type: integer
+          example: 90
+
+    User:
+      type: object
+      properties:
+        user_id:
+          type: integer
+          example: 1
+        username:
+          type: string
+          example: johndoe
+        email:
+          type: string
+          example: john.doe@example.com
+        created_at:
+          type: string
+          format: date-time
+          example: "2023-05-01T10:30:00Z"
+
+    UpdateUserRequest:
+      type: object
+      properties:
+        username:
+          type: string
+          example: newusername
+        email:
+          type: string
+          format: email
+          example: newemail@example.com
+
+    UpdateReviewRequest:
+      type: object
+      properties:
+        rating:
+          type: integer
+          example: 4
+        comment:
+          type: string
+          example: "Updated review comment after more usage."
+    
+    Product:
+      type: object
+      properties:
+        product_id:
+          type: integer
+          example: 1
+        category_id:
+          type: integer
+          example: 1
+        subcategory_id:
+          type: integer
+          example: 1
+        name:
+          type: string
+          example: "Smartphone"
+        description:
+          type: string
+          example: "A high-end smartphone with advanced features"
+        price:
+          type: number
+          example: 799.99
+        stock:
+          type: integer
+          example: 100
+        created_at:
+          type: string
+          format: date-time
+          example: "2023-05-01T10:30:00Z" 
