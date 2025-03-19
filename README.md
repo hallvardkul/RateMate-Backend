@@ -8,6 +8,8 @@ Backend API for RateMate application using Azure Functions, PostgreSQL, and Azur
 - Azure Functions Core Tools v4.x
 - PostgreSQL database (Azure Database for PostgreSQL)
 - Azure CLI (for deployment)
+- MongoDB Cosmos DB (for media metadata)
+- Azure Blob Storage (for media files)
 
 ## Setup
 
@@ -28,47 +30,28 @@ Backend API for RateMate application using Azure Functions, PostgreSQL, and Azur
        "POSTGRES_DB": "RateMate_dev_db",
        "POSTGRES_USER": "your_username",
        "POSTGRES_PASSWORD": "your_password",
-       "JWT_SECRET": "your-secret-key"
+       "JWT_SECRET": "your-secret-key",
+       "COSMOS_CONNECTION_STRING": "your-cosmos-connection-string",
+       "BLOB_STORAGE_CONNECTION_STRING": "your-blob-storage-connection-string",
+       "BLOB_CONTAINER_NAME": "media",
+       "COSMOS_DB_NAME": "your-cosmos-db-name",
+       "COSMOS_COLLECTION_NAME": "media"
      }
    }
    ```
+   A template file named `local.settings.template.json` is provided for reference.
 
-3. **Database Setup**
-
-   a. Create the database schema:
-   ```sql
-   CREATE SCHEMA IF NOT EXISTS dbo;
-   ```
-
-   b. Create the users table:
-   ```sql
-   CREATE TABLE dbo.users (
-       user_id SERIAL PRIMARY KEY,
-       username VARCHAR(50) UNIQUE NOT NULL,
-       email VARCHAR(100) UNIQUE NOT NULL,
-       password_hash VARCHAR(255) NOT NULL,
-       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-   );
-   ```
-
-   c. Set up required permissions:
-   ```sql
-   -- Grant schema usage
-   GRANT USAGE ON SCHEMA dbo TO your_username;
-
-   -- Grant table permissions
-   GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE dbo.users TO your_username;
-   GRANT ALL PRIVILEGES ON TABLE dbo.users TO your_username;
-
-   -- Grant sequence permissions (for SERIAL primary key)
-   GRANT USAGE, SELECT ON SEQUENCE dbo.users_user_id_seq TO your_username;
-   ```
-
-4. **Build and Run**
+3. **Build and Run**
    ```bash
    npm run build
    func start
    ```
+
+## API Documentation
+
+For full API documentation, see the Swagger UI:
+1. Start the server locally
+2. Open `swagger-ui.html` in your browser
 
 ## API Endpoints
 
@@ -340,6 +323,463 @@ Backend API for RateMate application using Azure Functions, PostgreSQL, and Azur
   }
   ```
 
+### Product Categories
+
+#### Get All Categories
+- **URL**: `/api/categories`
+- **Method**: `GET`
+- **Query Parameters**:
+  - `activeOnly`: Optional boolean to filter only active categories
+- **Success Response** (200 OK):
+  ```json
+  [
+    {
+      "category_id": 1,
+      "category_name": "Electronics",
+      "description": "Electronic devices and accessories",
+      "is_active": true,
+      "created_at": "2023-03-15T10:30:00.000Z"
+    },
+    {
+      "category_id": 2,
+      "category_name": "Clothing",
+      "description": "Apparel and fashion items",
+      "is_active": true,
+      "created_at": "2023-03-15T10:31:00.000Z"
+    }
+  ]
+  ```
+
+#### Get Category by ID
+- **URL**: `/api/categories/{categoryId}`
+- **Method**: `GET`
+- **URL Parameters**: `categoryId=[integer]`
+- **Success Response** (200 OK):
+  ```json
+  {
+    "category_id": 1,
+    "category_name": "Electronics",
+    "description": "Electronic devices and accessories",
+    "is_active": true,
+    "created_at": "2023-03-15T10:30:00.000Z"
+  }
+  ```
+- **Error Response** (404 Not Found):
+  ```json
+  {
+    "error": "Category with ID 1 not found"
+  }
+  ```
+
+#### Create Category
+- **URL**: `/api/categories`
+- **Method**: `POST`
+- **Headers**: 
+  - Content-Type: `application/json`
+  - Authorization: `Bearer {token}` (admin only)
+- **Body**:
+  ```json
+  {
+    "category_name": "Sports & Outdoors",
+    "description": "Sporting goods and outdoor equipment",
+    "is_active": true
+  }
+  ```
+- **Success Response** (201 Created):
+  ```json
+  {
+    "category_id": 3,
+    "category_name": "Sports & Outdoors",
+    "description": "Sporting goods and outdoor equipment",
+    "is_active": true,
+    "created_at": "2023-03-16T14:22:00.000Z"
+  }
+  ```
+- **Error Responses**:
+  - 400 Bad Request:
+    ```json
+    {
+      "error": "category_name is required"
+    }
+    ```
+  - 401 Unauthorized:
+    ```json
+    {
+      "error": "Authentication required"
+    }
+    ```
+  - 403 Forbidden:
+    ```json
+    {
+      "error": "Admin access required"
+    }
+    ```
+  - 409 Conflict:
+    ```json
+    {
+      "error": "A category with this name already exists"
+    }
+    ```
+
+#### Update Category
+- **URL**: `/api/categories/{categoryId}`
+- **Method**: `PUT`
+- **Headers**: 
+  - Content-Type: `application/json`
+  - Authorization: `Bearer {token}` (admin only)
+- **URL Parameters**: `categoryId=[integer]`
+- **Body**:
+  ```json
+  {
+    "category_name": "Sports Equipment",
+    "description": "Updated description for sports equipment",
+    "is_active": true
+  }
+  ```
+- **Success Response** (200 OK):
+  ```json
+  {
+    "category_id": 3,
+    "category_name": "Sports Equipment",
+    "description": "Updated description for sports equipment",
+    "is_active": true,
+    "created_at": "2023-03-16T14:22:00.000Z"
+  }
+  ```
+- **Error Responses**:
+  - 400 Bad Request:
+    ```json
+    {
+      "error": "No update fields provided"
+    }
+    ```
+  - 401 Unauthorized:
+    ```json
+    {
+      "error": "Authentication required"
+    }
+    ```
+  - 403 Forbidden:
+    ```json
+    {
+      "error": "Admin access required"
+    }
+    ```
+  - 404 Not Found:
+    ```json
+    {
+      "error": "Category with ID 3 not found"
+    }
+    ```
+  - 409 Conflict:
+    ```json
+    {
+      "error": "A category with this name already exists"
+    }
+    ```
+
+#### Delete Category
+- **URL**: `/api/categories/{categoryId}`
+- **Method**: `DELETE`
+- **Headers**: 
+  - Authorization: `Bearer {token}` (admin only)
+- **URL Parameters**: `categoryId=[integer]`
+- **Success Response** (200 OK):
+  ```json
+  {
+    "message": "Category with ID 3 successfully deleted",
+    "category": {
+      "category_id": 3,
+      "category_name": "Sports Equipment",
+      "description": "Updated description for sports equipment",
+      "is_active": true,
+      "created_at": "2023-03-16T14:22:00.000Z"
+    }
+  }
+  ```
+- **Error Responses**:
+  - 401 Unauthorized:
+    ```json
+    {
+      "error": "Authentication required"
+    }
+    ```
+  - 403 Forbidden:
+    ```json
+    {
+      "error": "Admin access required"
+    }
+    ```
+  - 404 Not Found:
+    ```json
+    {
+      "error": "Category with ID 3 not found"
+    }
+    ```
+  - 409 Conflict:
+    ```json
+    {
+      "error": "Cannot delete category with associated subcategories"
+    }
+    ```
+
+### Product Subcategories
+
+#### Get All Subcategories
+- **URL**: `/api/subcategories`
+- **Method**: `GET`
+- **Query Parameters**:
+  - `activeOnly`: Optional boolean to filter only active subcategories
+- **Success Response** (200 OK):
+  ```json
+  [
+    {
+      "subcategory_id": 1,
+      "parent_category_id": 1,
+      "parent_category_name": "Electronics",
+      "subcategory_name": "Smartphones",
+      "description": "Mobile phones and accessories",
+      "is_active": true,
+      "created_at": "2023-03-15T10:35:00.000Z"
+    },
+    {
+      "subcategory_id": 2,
+      "parent_category_id": 1,
+      "parent_category_name": "Electronics",
+      "subcategory_name": "Laptops",
+      "description": "Notebook computers and accessories",
+      "is_active": true,
+      "created_at": "2023-03-15T10:36:00.000Z"
+    }
+  ]
+  ```
+
+#### Get Subcategories by Category
+- **URL**: `/api/categories/{categoryId}/subcategories`
+- **Method**: `GET`
+- **URL Parameters**: `categoryId=[integer]`
+- **Query Parameters**:
+  - `activeOnly`: Optional boolean to filter only active subcategories
+- **Success Response** (200 OK):
+  ```json
+  [
+    {
+      "subcategory_id": 1,
+      "parent_category_id": 1,
+      "subcategory_name": "Smartphones",
+      "description": "Mobile phones and accessories",
+      "is_active": true,
+      "created_at": "2023-03-15T10:35:00.000Z"
+    },
+    {
+      "subcategory_id": 2,
+      "parent_category_id": 1,
+      "subcategory_name": "Laptops",
+      "description": "Notebook computers and accessories",
+      "is_active": true,
+      "created_at": "2023-03-15T10:36:00.000Z"
+    }
+  ]
+  ```
+- **Error Response** (404 Not Found):
+  ```json
+  {
+    "error": "Category with ID 1 not found"
+  }
+  ```
+
+#### Get Subcategory by ID
+- **URL**: `/api/subcategories/{subcategoryId}`
+- **Method**: `GET`
+- **URL Parameters**: `subcategoryId=[integer]`
+- **Success Response** (200 OK):
+  ```json
+  {
+    "subcategory_id": 1,
+    "parent_category_id": 1,
+    "parent_category_name": "Electronics",
+    "subcategory_name": "Smartphones",
+    "description": "Mobile phones and accessories",
+    "is_active": true,
+    "created_at": "2023-03-15T10:35:00.000Z"
+  }
+  ```
+- **Error Response** (404 Not Found):
+  ```json
+  {
+    "error": "Subcategory with ID 1 not found"
+  }
+  ```
+
+#### Create Subcategory
+- **URL**: `/api/subcategories`
+- **Method**: `POST`
+- **Headers**: 
+  - Content-Type: `application/json`
+  - Authorization: `Bearer {token}` (admin only)
+- **Body**:
+  ```json
+  {
+    "parent_category_id": 1,
+    "subcategory_name": "Tablets",
+    "description": "Tablet computers and accessories",
+    "is_active": true
+  }
+  ```
+- **Success Response** (201 Created):
+  ```json
+  {
+    "subcategory_id": 3,
+    "parent_category_id": 1,
+    "subcategory_name": "Tablets",
+    "description": "Tablet computers and accessories",
+    "is_active": true,
+    "created_at": "2023-03-16T15:10:00.000Z"
+  }
+  ```
+- **Error Responses**:
+  - 400 Bad Request:
+    ```json
+    {
+      "error": "Missing required fields: parent_category_id, subcategory_name"
+    }
+    ```
+  - 401 Unauthorized:
+    ```json
+    {
+      "error": "Authentication required"
+    }
+    ```
+  - 403 Forbidden:
+    ```json
+    {
+      "error": "Admin access required"
+    }
+    ```
+  - 404 Not Found:
+    ```json
+    {
+      "error": "Parent category with ID 1 not found"
+    }
+    ```
+  - 409 Conflict:
+    ```json
+    {
+      "error": "A subcategory with this name already exists in this category"
+    }
+    ```
+
+#### Update Subcategory
+- **URL**: `/api/subcategories/{subcategoryId}`
+- **Method**: `PUT`
+- **Headers**: 
+  - Content-Type: `application/json`
+  - Authorization: `Bearer {token}` (admin only)
+- **URL Parameters**: `subcategoryId=[integer]`
+- **Body**:
+  ```json
+  {
+    "parent_category_id": 1,
+    "subcategory_name": "Tablet Computers",
+    "description": "Updated description for tablet computers",
+    "is_active": true
+  }
+  ```
+- **Success Response** (200 OK):
+  ```json
+  {
+    "subcategory_id": 3,
+    "parent_category_id": 1,
+    "subcategory_name": "Tablet Computers",
+    "description": "Updated description for tablet computers",
+    "is_active": true,
+    "created_at": "2023-03-16T15:10:00.000Z"
+  }
+  ```
+- **Error Responses**:
+  - 400 Bad Request:
+    ```json
+    {
+      "error": "No update fields provided"
+    }
+    ```
+  - 401 Unauthorized:
+    ```json
+    {
+      "error": "Authentication required"
+    }
+    ```
+  - 403 Forbidden:
+    ```json
+    {
+      "error": "Admin access required"
+    }
+    ```
+  - 404 Not Found:
+    ```json
+    {
+      "error": "Subcategory with ID 3 not found"
+    }
+    ```
+  - 404 Not Found:
+    ```json
+    {
+      "error": "Parent category with ID 1 not found"
+    }
+    ```
+  - 409 Conflict:
+    ```json
+    {
+      "error": "A subcategory with this name already exists in this category"
+    }
+    ```
+
+#### Delete Subcategory
+- **URL**: `/api/subcategories/{subcategoryId}`
+- **Method**: `DELETE`
+- **Headers**: 
+  - Authorization: `Bearer {token}` (admin only)
+- **URL Parameters**: `subcategoryId=[integer]`
+- **Success Response** (200 OK):
+  ```json
+  {
+    "message": "Subcategory with ID 3 successfully deleted",
+    "subcategory": {
+      "subcategory_id": 3,
+      "parent_category_id": 1,
+      "subcategory_name": "Tablet Computers",
+      "description": "Updated description for tablet computers",
+      "is_active": true,
+      "created_at": "2023-03-16T15:10:00.000Z"
+    }
+  }
+  ```
+- **Error Responses**:
+  - 401 Unauthorized:
+    ```json
+    {
+      "error": "Authentication required"
+    }
+    ```
+  - 403 Forbidden:
+    ```json
+    {
+      "error": "Admin access required"
+    }
+    ```
+  - 404 Not Found:
+    ```json
+    {
+      "error": "Subcategory with ID 3 not found"
+    }
+    ```
+  - 409 Conflict:
+    ```json
+    {
+      "error": "Cannot delete subcategory with associated products"
+    }
+    ```
+
 ### Database Schema
 
 #### Users Table
@@ -409,6 +849,31 @@ CREATE TABLE dbo.rating_categories (
     description TEXT,
     is_active BOOLEAN DEFAULT TRUE
 );
+```
+
+#### Product Categories Tables
+```sql
+CREATE TABLE dbo.product_categories (
+    category_id SERIAL PRIMARY KEY,
+    category_name VARCHAR(100) UNIQUE NOT NULL,
+    description TEXT,
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE dbo.product_subcategories (
+    subcategory_id SERIAL PRIMARY KEY,
+    parent_category_id INTEGER NOT NULL,
+    subcategory_name VARCHAR(100) NOT NULL,
+    description TEXT,
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (parent_category_id) REFERENCES dbo.product_categories(category_id) ON DELETE CASCADE,
+    UNIQUE(parent_category_id, subcategory_name)
+);
+
+-- Required indexes
+CREATE INDEX idx_product_subcategories_parent ON dbo.product_subcategories(parent_category_id);
 ```
 
 ## Authentication Middleware
