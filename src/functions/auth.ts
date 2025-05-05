@@ -2,6 +2,7 @@ import { app, HttpRequest, HttpResponseInit, InvocationContext } from "@azure/fu
 import bcryptjs from "bcryptjs";
 import jwt from "jsonwebtoken";
 import pool from "../database/postgresClient";
+import { withGuards } from "../utils/corsMiddleware";
 
 interface RegisterRequest {
     username: string;
@@ -15,10 +16,10 @@ interface LoginRequest {
 }
 
 app.http('register', {
-    methods: ['POST'],
+    methods: ['POST','OPTIONS'],
     authLevel: 'anonymous',
     route: "auth/register",
-    handler: async (request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> => {
+    handler: withGuards(async (request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> => {
         try {
             const body = await request.json() as RegisterRequest;
             const { username, email, password } = body;
@@ -65,14 +66,14 @@ app.http('register', {
                 }
             };
         }
-    }
+    })
 });
 
 app.http('login', {
-    methods: ['POST'],
+    methods: ['POST','OPTIONS'],
     authLevel: 'anonymous',
     route: "auth/login",
-    handler: async (request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> => {
+    handler: withGuards(async (request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> => {
         try {
             const body = await request.json() as LoginRequest;
             const { email, password } = body;
@@ -149,5 +150,5 @@ app.http('login', {
                 }
             };
         }
-    }
+    })
 }); 

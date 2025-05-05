@@ -23,28 +23,13 @@ console.log('PostgreSQL connection details:', {
 // Configure pool
 const pool = new Pool(DB_CONFIG);
 
-// Test the connection immediately
-console.log('Testing PostgreSQL connection...');
-pool.connect()
-  .then(client => {
-    console.log('✓ Successfully connected to PostgreSQL');
-    client.release();
-  })
-  .catch(err => {
-    console.error('✗ PostgreSQL connection test failed:', err.message);
-    console.error('Make sure PostgreSQL is running and your connection details are correct.');
-    
-    // Log some helpful troubleshooting tips
-    console.log('Troubleshooting tips:');
-    console.log('1. Verify the POSTGRES_PASSWORD environment variable is set correctly');
-    console.log('2. Check that ratemate_appuser has proper permissions in Azure PostgreSQL');
-    console.log('3. Ensure your IP address is allowed in Azure PostgreSQL firewall rules');
-    console.log('4. Verify the user has USAGE permission on the dbo schema');
-  });
-
 // Add event listeners
-pool.on('connect', () => {
+pool.on('connect', (client) => {
   console.log('Connected to PostgreSQL pool');
+  // Set default schema to dbo so unqualified table names resolve correctly
+  client.query('SET search_path TO dbo')
+    .then(() => console.log('search_path set to dbo'))
+    .catch(err => console.error('Error setting search_path:', err.message));
 });
 
 pool.on('error', (err) => {

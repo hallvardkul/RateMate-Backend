@@ -22,13 +22,14 @@ import {
     UpdateProductSubcategoryRequest 
 } from "../models/productCategory";
 import { setupDbContext } from "../database/dbMiddleware";
+import { withGuards } from '../utils/corsMiddleware';
 
 // Get all categories or active categories
 app.http('getCategories', {
-    methods: ['GET'],
+    methods: ['GET', 'OPTIONS'],
     authLevel: 'anonymous',
     route: "categories",
-    handler: async (request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> => {
+    handler: withGuards(async (request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> => {
         try {
             // Set up database context
             setupDbContext(context);
@@ -39,18 +40,12 @@ app.http('getCategories', {
                 ? await getActiveCategories(context) 
                 : await getAllCategories(context);
             
-            return {
-                status: 200,
-                jsonBody: categories
-            };
+            return { status: 200, jsonBody: categories };
         } catch (error: any) {
             context.log('Error in getCategories:', error);
-            return {
-                status: 500,
-                jsonBody: { error: "Failed to retrieve categories" }
-            };
+            return { status: 500, jsonBody: { error: "Failed to retrieve categories" } };
         }
-    }
+    })
 });
 
 // Get a specific category by ID

@@ -9,39 +9,27 @@ export class MediaService {
     private containerName: string;
 
     constructor() {
-        const blobStorageUrl = process.env.BLOB_STORAGE_URL;
-        if (!blobStorageUrl) {
-            throw new Error("BLOB_STORAGE_URL environment variable is not set");
-        }
-        
+        // Determine blob client: use connection string locally, managed identity in production
         this.containerName = process.env.BLOB_CONTAINER_NAME || "media";
-    
-        try {
+        const connStr = process.env.BLOB_STORAGE_CONNECTION_STRING;
+        if (connStr) {
+            console.log('Initializing BlobServiceClient using connection string');
+            this.blobServiceClient = BlobServiceClient.fromConnectionString(connStr);
+        } else {
+            const blobStorageUrl = process.env.BLOB_STORAGE_URL;
+            if (!blobStorageUrl) {
+                throw new Error("BLOB_STORAGE_URL environment variable is not set");
+            }
             console.log('Initializing BlobServiceClient with managed identity...');
             console.log('Using storage URL:', blobStorageUrl);
-            
             const credential = new DefaultAzureCredential({
                 managedIdentityClientId: process.env.MANAGED_IDENTITY_CLIENT_ID
             });
-            
             this.blobServiceClient = new BlobServiceClient(blobStorageUrl, credential);
-            console.log(`BlobServiceClient initialized for container: ${this.containerName}`);
-            
-            // Test the credentials immediately
-            this.testConnection();
-        } catch (error) {
-            console.error('Failed to initialize BlobServiceClient with managed identity:', error);
-            if (error instanceof Error) {
-                console.error('Authentication Details:', error.message);
-                if (process.env.NODE_ENV === 'development') {
-                    console.error('Hint: For local development:');
-                    console.error('1. Run `az login`');
-                    console.error('2. Run `az account set --subscription <subscription-id>`');
-                    console.error('3. Ensure you have proper RBAC roles on the storage account');
-                }
-            }
-            throw new Error('Failed to authenticate with Azure Blob Storage. Check credentials and permissions.');
         }
+        console.log(`BlobServiceClient initialized for container: ${this.containerName}`);
+        // Test the credentials immediately
+        this.testConnection();
     }
 
     private async testConnection() {

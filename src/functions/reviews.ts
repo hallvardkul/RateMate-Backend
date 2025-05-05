@@ -1,4 +1,5 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from "@azure/functions";
+import { withGuards } from "../utils/corsMiddleware";
 import { requireAuth } from "../utils/authMiddleware";
 import { CreateReviewRequest, UpdateReviewRequest } from "../models/review";
 import { 
@@ -12,10 +13,10 @@ import {
 
 // Reviews endpoint - handles all review operations
 app.http('reviews', {
-    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     authLevel: 'anonymous',
     route: "reviews/{id?}",
-    handler: async (request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> => {
+    handler: withGuards(async (request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> => {
         try {
             const method = request.method;
             const id = request.params.id;
@@ -274,5 +275,5 @@ app.http('reviews', {
                 }
             };
         }
-    }
+    })
 }); 

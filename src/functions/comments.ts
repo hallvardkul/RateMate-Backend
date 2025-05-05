@@ -9,13 +9,14 @@ import {
     updateComment, 
     deleteComment 
 } from "../services/commentService";
+import { withGuards } from '../utils/corsMiddleware';
 
 // Comments endpoint - handles all comment operations
 app.http('comments', {
-    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     authLevel: 'anonymous',
     route: "comments/{id?}",
-    handler: async (request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> => {
+    handler: withGuards(async (request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> => {
         try {
             const method = request.method;
             const id = request.params.id;
@@ -221,5 +222,5 @@ app.http('comments', {
                 }
             };
         }
-    }
+    })
 }); 
