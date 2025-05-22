@@ -1,0 +1,7 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+When asked to implement a non-trivial feature, **write unit tests first, run them, then write code until tests pass**.
+

@@ -1,0 +1,8 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+- **Read-don't-ask**: Open and scan the relevant files/folders yourself; do not ask the user to locate lines or confirm filenames.
+- **Auto-apply**: When you find an issue, apply the fix directly, save the file, and show the diff in chat.
+- Request confirmation **only** if the change deletes more than 30 lines or modifies deployment / infrastructure config.

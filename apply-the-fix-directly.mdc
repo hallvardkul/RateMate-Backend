@@ -1,0 +1,8 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+- When generating code or refactors, **apply the edits directly** rather than suggesting them.
+- Save the modified files and show the diff in chat; no extra confirmation needed.
+- Ask for confirmation only if the change deletes more than 30 lines or affects deployment config.
