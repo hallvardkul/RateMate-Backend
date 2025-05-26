@@ -1,0 +1,14 @@
+---
+description: High-level architecture for the whole RateMate monorepo
+alwaysApply: true
+---
+
+# RateMate at a glance
+
+- **Frontend** (React + Vite) lives in `Ratemate-Frontend/`.
+- **Backend** (Azure Functions, Node 20 TS) lives in `RateMate-Backend/`.
+- Data:
+  - **PostgreSQL** for relational entities (`users`, `products`, `reviews`).
+  - **Cosmos DB (Mongo API)** for media metadata.
+  - **Azure Blob Storage** for actual images/videos.  
+- Prefer functional, typed code (TypeScript strict mode on both sides). 

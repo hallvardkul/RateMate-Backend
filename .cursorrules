@@ -1,0 +1,9 @@
+---
+description: Backend – database collaboration protocol
+globs: ["RateMate-Backend/**"]
+---
+
+- You do **not** have direct access to PostgreSQL.
+- If you need table structures or data, write the exact **SQL query** you want me to run (e.g., `SELECT column_name, data_type FROM information_schema.columns WHERE table_name = 'users';`).
+- Wait for me to paste the results in chat before proceeding.
+- When schema changes are required, send the full `CREATE/ALTER` statements; I will execute them and confirm. 

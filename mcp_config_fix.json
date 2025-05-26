@@ -1,0 +1,31 @@
+{
+  "mcpServers": {
+    "github": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@smithery/cli@latest",
+        "run",
+        "@smithery-ai/github",
+        "--key",
+        "a91ddc92-e883-451e-aaae-bc4d4c18885a",
+        "--profile",
+        "agreed-dog-khrXJm"
+      ]
+    },
+    "browser-tools": {
+      "command": "npx",
+      "args": [
+        "@agentdeskai/browser-tools-mcp@1.2.0"
+      ]
+    },
+    "postgres": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-postgres",
+        "postgresql://ratemate_testuser:Emilia123@ratemate-dev-postgres.postgres.database.azure.com:5432/RateMate_dev_db?sslmode=require"
+      ]
+    }
+  }
+} 

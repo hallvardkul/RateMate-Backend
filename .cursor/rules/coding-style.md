@@ -1,0 +1,10 @@
+---
+description: Style, naming & commit conventions
+alwaysApply: true
+---
+
+## General coding conventions
+- Use **Prettier defaults** (single quotes, 2-space indent, semi-colons ON).
+- File names: **kebab-case** for folders, **camelCase.ts** for files.
+- Variables read left-to-right: `isLoading`, `hasError`, `reviewCount`.
+- **Conventional Commits** for Git messages (`feat:`, `fix:`, `docs:` … max 60 chars). 

@@ -1,9 +1,13 @@
 import { HttpRequest, InvocationContext } from "@azure/functions";
 import jwt from "jsonwebtoken";
+import { UserType } from "../models/user";
 
 export interface AuthUser {
     userId: number;
     email: string;
+    username: string;
+    user_type: UserType;
+    is_verified: boolean;
     is_admin?: boolean;
 }
 
@@ -49,7 +53,10 @@ export async function authenticate(request: HttpRequest, context: InvocationCont
             isAuthenticated: true,
             user: {
                 userId: decoded.userId,
-                email: decoded.email
+                email: decoded.email,
+                username: decoded.username,
+                user_type: decoded.user_type,
+                is_verified: decoded.is_verified
             }
         };
     } catch (error) {
