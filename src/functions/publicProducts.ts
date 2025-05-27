@@ -103,7 +103,7 @@ app.http('getPublicProducts', {
 app.http('getPublicProduct', {
     methods: ['GET'],
     authLevel: 'anonymous',
-    route: "public/products/{productId}",
+    route: "public/products/{productId:int}",
     handler: async (request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> => {
         try {
             const productId = request.params.productId;

@@ -3,6 +3,7 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from "@azure/functions";
 import { v4 as uuidv4 } from "uuid";
 import Busboy from "busboy";
+import { Readable } from "stream";
 import pool from "../database/postgresClient";
 import { uploadBuffer } from "../utils/blobStorage";
 import { requireBrandAuth } from "../utils/brandAuthMiddleware";
@@ -37,8 +38,22 @@ app.http("uploadProductMedia", {
     }
 
     // Parse multipart
+    // Convert the Headers (Fetch-style) object that Azure Functions provides
+    // into the plain object format expected by busboy (IncomingHttpHeaders).
+    const rawHeaders: Record<string, string> = {};
+    request.headers.forEach((value, key) => {
+      rawHeaders[key.toLowerCase()] = value;
+    });
+
+    context.log('uploadProductMedia: rawHeaders', rawHeaders);
+
+    // Ensure Content-Type header is present
+    if (!rawHeaders['content-type']) {
+      return { status: 400, jsonBody: { error: 'Missing Content-Type header; must be multipart/form-data' } };
+    }
+
     // @ts-ignore – busboy types provided via custom declaration
-    const busboy = Busboy({ headers: request.headers });
+    const busboy = Busboy({ headers: rawHeaders });
     const files: MultipartFile[] = [];
 
     const filePromises: Promise<void>[] = [];
@@ -61,8 +76,17 @@ app.http("uploadProductMedia", {
       busboy.on("error", (err: any) => reject(err));
     });
 
-    // @ts-ignore azure functions request.body is a Node readable
-    (request as any).body?.pipe(busboy);
+    // Azure Functions v4 may provide the body as a Buffer instead of a stream.
+    let bodyStream: NodeJS.ReadableStream | undefined = (request as any).body;
+
+    if (!bodyStream || typeof (bodyStream as any).pipe !== "function") {
+      // Convert ArrayBuffer / Buffer to a Readable stream for Busboy
+      const arrBuffer = await request.arrayBuffer();
+      const buf = Buffer.from(arrBuffer);
+      bodyStream = Readable.from(buf);
+    }
+
+    bodyStream.pipe(busboy);
 
     try {
       await parsePromise;
