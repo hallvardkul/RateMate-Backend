@@ -340,4 +340,33 @@ app.http('getPublicBrand', {
             };
         }
     }
+});
+
+// Get product media (public endpoint)
+app.http('getPublicProductMedia', {
+    methods: ['GET'],
+    authLevel: 'anonymous',
+    route: "public/products/{productId}/media",
+    handler: async (request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> => {
+        try {
+            const { productId } = request.params as { productId: string };
+            if (!productId) {
+                return { status: 400, jsonBody: { error: 'Product ID is required' } };
+            }
+
+            // fetch media rows
+            const result = await pool.query(
+                `SELECT media_id, file_url, file_type, uploaded_at
+                 FROM dbo.products_media
+                 WHERE product_id = $1
+                 ORDER BY uploaded_at DESC`,
+                [productId]
+            );
+
+            return { status: 200, jsonBody: { media: result.rows } };
+        } catch (error) {
+            context.error('Error in getPublicProductMedia function:', error);
+            return { status: 500, jsonBody: { error: 'Internal server error', details: error instanceof Error ? error.message : String(error) } };
+        }
+    },
 }); 

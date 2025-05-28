@@ -14,6 +14,12 @@ export async function uploadBuffer(buffer: Buffer, blobName: string, contentType
   const containerClient = blobServiceClient.getContainerClient(containerName);
   if (!(await containerClient.exists())) {
     await containerClient.create({ access: "blob" });
+  } else {
+    // Ensure access level is at least blob for public read
+    const props = await containerClient.getProperties();
+    if (props.blobPublicAccess !== "blob") {
+      await containerClient.setAccessPolicy("blob");
+    }
   }
 
   const blockBlobClient = containerClient.getBlockBlobClient(blobName);
