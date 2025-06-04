@@ -85,6 +85,40 @@ Uses existing user authentication system from `auth.ts`.
 }
 ```
 
+### Submit Quick Review from Dashboard
+- **POST** `/api/dashboard/products/{productId}/reviews`
+- **Headers:** `Authorization: Bearer <user_token>`
+- **Body:**
+```json
+{
+  "title": "string",
+  "content": "string",
+  "rating": "number (1-10)",
+  "category_ratings": {
+    "value_for_money": "number (1-10, optional)",
+    "build_quality": "number (1-10, optional)",
+    "functionality": "number (1-10, optional)",
+    "durability": "number (1-10, optional)",
+    "ease_of_use": "number (1-10, optional)",
+    "aesthetics": "number (1-10, optional)",
+    "compatibility": "number (1-10, optional)"
+  }
+}
+```
+- **Response:** Created review with user information for immediate display
+
+### Submit Quick Comment from Dashboard
+- **POST** `/api/dashboard/reviews/{reviewId}/comments`
+- **Headers:** `Authorization: Bearer <user_token>`
+- **Body:**
+```json
+{
+  "content": "string",
+  "parent_comment_id": "number (optional, for replies)"
+}
+```
+- **Response:** Created comment with user information for immediate display
+
 ### Get User's Reviews
 - **GET** `/api/users/reviews`
 - **Headers:** `Authorization: Bearer <user_token>`
@@ -117,6 +151,77 @@ Uses existing user authentication system from `auth.ts`.
 ### Get Product by ID
 - **GET** `/api/public/products/{productId}`
 - **Response:** Product details with brand information and review statistics
+
+### Get Comprehensive Product Dashboard
+- **GET** `/api/dashboard/products/{productId}`
+- **Response:** Complete product dashboard including:
+  - Product details with brand information
+  - Rating statistics (average, distribution, quality breakdown)
+  - Category rating averages
+  - All reviews with user information and category ratings
+  - All comments (threaded) for each review
+  - Recommendation percentage
+
+**Example Response:**
+```json
+{
+  "product": {
+    "product_id": 1,
+    "product_name": "Example Product",
+    "product_category": "Electronics",
+    "description": "Product description",
+    "brand_name": "Example Brand",
+    "brand_verified": true
+  },
+  "rating_statistics": {
+    "total_reviews": 25,
+    "average_rating": "8.2",
+    "recommendation_percentage": 84,
+    "rating_distribution": [
+      {"rating": 10, "count": 5},
+      {"rating": 9, "count": 8},
+      // ... etc
+    ],
+    "quality_breakdown": {
+      "excellent": 15,
+      "good": 6,
+      "average": 3,
+      "poor": 1
+    }
+  },
+  "category_ratings": [
+    {
+      "category": "build_quality",
+      "average_score": "8.5",
+      "rating_count": 20
+    }
+    // ... etc
+  ],
+  "reviews": [
+    {
+      "review_id": 1,
+      "title": "Great product!",
+      "content": "Really satisfied with this purchase",
+      "rating": 9,
+      "username": "john_doe",
+      "user_verified": true,
+      "category_ratings": [
+        {"category": "build_quality", "score": 9},
+        {"category": "value_for_money", "score": 8}
+      ],
+      "comments": [
+        {
+          "comment_id": 1,
+          "content": "Thanks for the review!",
+          "username": "brand_rep",
+          "replies": []
+        }
+      ]
+    }
+    // ... etc
+  ]
+}
+```
 
 ### Get Product Reviews
 - **GET** `/api/products/{productId}/reviews`

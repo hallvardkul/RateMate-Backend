@@ -472,4 +472,253 @@ app.http('deleteReview', {
             };
         }
     }
+});
+
+// Quick Review Submission for Dashboard (User-Authenticated)
+app.http('submitQuickReview', {
+    methods: ['POST'],
+    authLevel: 'anonymous',
+    route: "dashboard/products/{productId:int}/reviews",
+    handler: async (request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> => {
+        try {
+            const productId = request.params.productId;
+            
+            if (!productId) {
+                return {
+                    status: 400,
+                    jsonBody: { error: "Product ID is required" }
+                };
+            }
+
+            // Require authentication for review submission
+            const user = await requireAuth(request, context);
+            
+            const body = await request.json() as any;
+            const { title, content, rating, category_ratings } = body;
+            
+            // Validate required fields
+            if (!title || !content || rating === undefined) {
+                return {
+                    status: 400,
+                    jsonBody: { error: "Missing required fields: title, content, rating" }
+                };
+            }
+            
+            if (rating < 1 || rating > 10) {
+                return {
+                    status: 400,
+                    jsonBody: { error: "Rating must be between 1 and 10" }
+                };
+            }
+
+            // Check if product exists
+            const productCheck = await pool.query(
+                "SELECT product_id, product_name FROM dbo.products WHERE product_id = $1",
+                [productId]
+            );
+
+            if (productCheck.rows.length === 0) {
+                return {
+                    status: 404,
+                    jsonBody: { error: "Product not found" }
+                };
+            }
+
+            // Check if user has already reviewed this product
+            const existingReview = await pool.query(
+                "SELECT review_id FROM dbo.reviews WHERE user_id = $1 AND product_id = $2",
+                [user.userId, productId]
+            );
+
+            if (existingReview.rows.length > 0) {
+                return {
+                    status: 409,
+                    jsonBody: { error: "You have already reviewed this product" }
+                };
+            }
+            
+            // Validate category ratings if provided
+            if (category_ratings) {
+                const categories = [
+                    'value_for_money', 
+                    'build_quality', 
+                    'functionality', 
+                    'durability', 
+                    'ease_of_use', 
+                    'aesthetics', 
+                    'compatibility'
+                ];
+                
+                for (const category of categories) {
+                    const score = category_ratings[category];
+                    if (score !== undefined && (score < 1 || score > 10)) {
+                        return {
+                            status: 400,
+                            jsonBody: { error: `${category} rating must be between 1 and 10` }
+                        };
+                    }
+                }
+            }
+
+            // Create the review
+            const result = await pool.query(
+                `INSERT INTO dbo.reviews (user_id, product_id, title, content, rating, created_at, updated_at)
+                 VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                 RETURNING review_id, user_id, product_id, title, content, rating, created_at`,
+                [user.userId, productId, title, content, rating]
+            );
+
+            const newReview = result.rows[0];
+
+            // Insert category ratings if provided
+            if (category_ratings) {
+                for (const [category, score] of Object.entries(category_ratings)) {
+                    if (score !== undefined && score !== null) {
+                        await pool.query(
+                            `INSERT INTO dbo.category_ratings (review_id, category, score, created_at)
+                             VALUES ($1, $2, $3, CURRENT_TIMESTAMP)`,
+                            [newReview.review_id, category, score]
+                        );
+                    }
+                }
+            }
+            
+            // Return the new review with user information for immediate display
+            const enrichedReview = {
+                ...newReview,
+                username: user.username,
+                user_verified: user.is_verified || false,
+                product_name: productCheck.rows[0].product_name
+            };
+            
+            return {
+                status: 201,
+                jsonBody: {
+                    message: "Review submitted successfully",
+                    review: enrichedReview
+                }
+            };
+            
+        } catch (error) {
+            if (error instanceof Error && error.name === "UnauthorizedError") {
+                return {
+                    status: 401,
+                    jsonBody: { error: "Authentication required to submit reviews" }
+                };
+            }
+            
+            context.error('Error in submitQuickReview function:', error);
+            return {
+                status: 500,
+                jsonBody: { 
+                    error: "Internal server error",
+                    details: error instanceof Error ? error.message : String(error)
+                }
+            };
+        }
+    }
+});
+
+// Quick Comment Submission for Dashboard (User-Authenticated)
+app.http('submitQuickComment', {
+    methods: ['POST'],
+    authLevel: 'anonymous',
+    route: "dashboard/reviews/{reviewId:int}/comments",
+    handler: async (request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> => {
+        try {
+            const reviewId = request.params.reviewId;
+            
+            if (!reviewId) {
+                return {
+                    status: 400,
+                    jsonBody: { error: "Review ID is required" }
+                };
+            }
+
+            // Require authentication for comment submission
+            const user = await requireAuth(request, context);
+            
+            const body = await request.json() as any;
+            const { content, parent_comment_id } = body;
+            
+            // Validate required fields
+            if (!content || content.trim().length === 0) {
+                return {
+                    status: 400,
+                    jsonBody: { error: "Comment content is required" }
+                };
+            }
+
+            // Check if review exists
+            const reviewCheck = await pool.query(
+                "SELECT review_id, title FROM dbo.reviews WHERE review_id = $1",
+                [reviewId]
+            );
+
+            if (reviewCheck.rows.length === 0) {
+                return {
+                    status: 404,
+                    jsonBody: { error: "Review not found" }
+                };
+            }
+
+            // If replying to a comment, check if parent comment exists and belongs to this review
+            if (parent_comment_id) {
+                const parentCheck = await pool.query(
+                    "SELECT comment_id, review_id FROM dbo.comments WHERE comment_id = $1 AND review_id = $2",
+                    [parent_comment_id, reviewId]
+                );
+
+                if (parentCheck.rows.length === 0) {
+                    return {
+                        status: 400,
+                        jsonBody: { error: "Parent comment not found or doesn't belong to this review" }
+                    };
+                }
+            }
+
+            // Create the comment
+            const result = await pool.query(
+                `INSERT INTO dbo.comments (review_id, user_id, parent_comment_id, content, created_at, updated_at)
+                 VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                 RETURNING comment_id, review_id, user_id, parent_comment_id, content, created_at`,
+                [reviewId, user.userId, parent_comment_id || null, content]
+            );
+
+            const newComment = result.rows[0];
+            
+            // Return the new comment with user information for immediate display
+            const enrichedComment = {
+                ...newComment,
+                username: user.username,
+                user_verified: user.is_verified || false,
+                avatar_url: null
+            };
+            
+            return {
+                status: 201,
+                jsonBody: {
+                    message: "Comment submitted successfully",
+                    comment: enrichedComment
+                }
+            };
+            
+        } catch (error) {
+            if (error instanceof Error && error.name === "UnauthorizedError") {
+                return {
+                    status: 401,
+                    jsonBody: { error: "Authentication required to submit comments" }
+                };
+            }
+            
+            context.error('Error in submitQuickComment function:', error);
+            return {
+                status: 500,
+                jsonBody: { 
+                    error: "Internal server error",
+                    details: error instanceof Error ? error.message : String(error)
+                }
+            };
+        }
+    }
 }); 
