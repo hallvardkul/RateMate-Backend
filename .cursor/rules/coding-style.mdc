@@ -1,0 +1,11 @@
+---
+description: Style and naming conventions
+globs:
+  - "**"
+alwaysApply: true
+---
+
+- Use **Prettier defaults** (single quotes, 2-space indent, semicolons ON)
+- **File names**: kebab-case folders, camelCase files
+- **Variables** are descriptive, e.g. isLoading, hasError, reviewCount
+- **Conventional Commits** prefixes (feat:, fix:, docs:) max 60 chars

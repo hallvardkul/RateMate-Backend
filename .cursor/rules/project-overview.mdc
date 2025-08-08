@@ -1,0 +1,16 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+---
+description: Project architecture and technology stack overview
+globs:
+  - "**"
+alwaysApply: true
+---
+
+- **Frontend**: React + Vite lives in `Ratemate-Frontend/`.
+- **Backend**: Azure Functions (Node 20 TS) lives in `RateMate-Backend/`.
+- **Data sources**: PostgreSQL (relational), Cosmos DB (Mongo API metadata), Azure Blob Storage (media files).
+- **TypeScript strict mode** is enabled across both repos.
