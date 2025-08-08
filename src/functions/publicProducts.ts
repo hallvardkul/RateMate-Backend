@@ -1,12 +1,13 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from "@azure/functions";
 import pool from "../database/postgresClient";
+import { withGuards } from "../utils/corsMiddleware";
 
 // Get all products (public endpoint with filtering and pagination)
 app.http('getPublicProducts', {
-    methods: ['GET'],
+    methods: ['GET', 'OPTIONS'],
     authLevel: 'anonymous',
     route: "public/products",
-    handler: async (request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> => {
+    handler: withGuards(async (request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> => {
         try {
             const url = new URL(request.url);
             const page = parseInt(url.searchParams.get('page') || '1');
@@ -96,15 +97,15 @@ app.http('getPublicProducts', {
                 }
             };
         }
-    }
+    })
 });
 
 // Get product by ID (public endpoint)
 app.http('getPublicProduct', {
-    methods: ['GET'],
+    methods: ['GET', 'OPTIONS'],
     authLevel: 'anonymous',
     route: "public/products/{productId:int}",
-    handler: async (request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> => {
+    handler: withGuards(async (request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> => {
         try {
             const productId = request.params.productId;
 
@@ -154,15 +155,15 @@ app.http('getPublicProduct', {
                 }
             };
         }
-    }
+    })
 });
 
 // Get product categories (public endpoint)
 app.http('getPublicProductCategories', {
-    methods: ['GET'],
+    methods: ['GET', 'OPTIONS'],
     authLevel: 'anonymous',
     route: "public/products/categories",
-    handler: async (request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> => {
+    handler: withGuards(async (request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> => {
         try {
             const result = await pool.query(
                 `SELECT DISTINCT product_category as category, COUNT(*) as product_count
@@ -186,15 +187,15 @@ app.http('getPublicProductCategories', {
                 }
             };
         }
-    }
+    })
 });
 
 // Get all brands (public endpoint)
 app.http('getPublicBrands', {
-    methods: ['GET'],
+    methods: ['GET', 'OPTIONS'],
     authLevel: 'anonymous',
     route: "public/brands",
-    handler: async (request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> => {
+    handler: withGuards(async (request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> => {
         try {
             const url = new URL(request.url);
             const page = parseInt(url.searchParams.get('page') || '1');
@@ -267,15 +268,15 @@ app.http('getPublicBrands', {
                 }
             };
         }
-    }
+    })
 });
 
 // Get brand by ID (public endpoint)
 app.http('getPublicBrand', {
-    methods: ['GET'],
+    methods: ['GET', 'OPTIONS'],
     authLevel: 'anonymous',
     route: "public/brands/{brandId}",
-    handler: async (request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> => {
+    handler: withGuards(async (request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> => {
         try {
             const brandId = request.params.brandId;
 
@@ -339,15 +340,15 @@ app.http('getPublicBrand', {
                 }
             };
         }
-    }
+    })
 });
 
 // Get product media (public endpoint)
 app.http('getPublicProductMedia', {
-    methods: ['GET'],
+    methods: ['GET', 'OPTIONS'],
     authLevel: 'anonymous',
     route: "public/products/{productId}/media",
-    handler: async (request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> => {
+    handler: withGuards(async (request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> => {
         try {
             const { productId } = request.params as { productId: string };
             if (!productId) {
@@ -368,5 +369,5 @@ app.http('getPublicProductMedia', {
             context.error('Error in getPublicProductMedia function:', error);
             return { status: 500, jsonBody: { error: 'Internal server error', details: error instanceof Error ? error.message : String(error) } };
         }
-    },
+    })
 }); 
